@@ -29,6 +29,7 @@
     + [48.最长不含重复字符的子字符串](#48-------------)
     + [49.丑数](#49--)
 
+<small><i><a href='http://ecotrust-canada.github.io/markdown-toc/'>Table of contents generated with markdown-toc</a></i></small>
 
 # 剑指Offer
 
