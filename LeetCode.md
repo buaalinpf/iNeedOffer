@@ -37,6 +37,22 @@
     + [4.寻找两个有序数组的中位数](#4寻找两个有序数组的中位数)
     + [6.Z字形变换](#6z字形变换)
     + [1039.多边形三角剖分的最低得分](#1039多边形三角剖分的最低得分)
+    + [1162.地图分析](#1162地图分析)
+    + [289.生命游戏](#289生命游戏)
+    + [491.递增子序列](#491递增子序列)
+    + [678.有效的括号字符串](#678有效的括号字符串)
+    + [1111.有效括号的嵌套深度](#1111有效括号的嵌套深度)
+    + [01-07.原地旋转矩阵](#01-07原地旋转矩阵)
+    + [120.三角形最小路径和](#120三角形最小路径和)
+    + [139.单词拆分](#139单词拆分)
+    + [22.括号生成](#22括号生成)
+    + [1292.元素和小于等于阈值的正方形的最大边长](#1292元素和小于等于阈值的正方形的最大边长)
+    + [887.鸡蛋掉落](#887鸡蛋掉落)
+    + [93.复原IP地址](#93复原ip地址)
+    + [355.设计推特](#355设计推特)
+    + [445.两数相加II](#445两数相加ii)
+    + [1283.使结果不超过阈值的最小除数](#1283使结果不超过阈值的最小除数)
+    + [23.合并K个排序链表](#23合并k个排序链表)
 
 # LeetCode
 
@@ -2219,3 +2235,1280 @@ int minScoreTriangulation(vector<int>& A) {
 }
 ~~~
 
+
+
+### 1162.地图分析
+
+你现在手里有一份大小为 N x N 的『地图』（网格） grid，上面的每个『区域』（单元格）都用 0 和 1 标记好了。其中 0 代表海洋，1 代表陆地，你知道距离陆地区域最远的海洋区域是是哪一个吗？请返回该海洋区域到离它最近的陆地区域的距离。
+
+我们这里说的距离是『曼哈顿距离』（ Manhattan Distance）：(x0, y0) 和 (x1, y1) 这两个区域之间的距离是 |x0 - x1| + |y0 - y1| 。
+
+如果我们的地图上只有陆地或者海洋，请返回 -1。
+
+~~~
+输入：[[1,0,1],[0,0,0],[1,0,1]]
+输出：2
+解释： 
+海洋区域 (1, 1) 和所有陆地区域之间的距离都达到最大，最大距离为 2。
+
+输入：[[1,0,0],[0,0,0],[0,0,0]]
+输出：4
+解释： 
+海洋区域 (2, 2) 和所有陆地区域之间的距离都达到最大，最大距离为 4。
+~~~
+
+**解：**
+
+求出每个**海洋** 对周边 **陆地** 的最 min 距离
+
+然后对这些最 min 距离 中的 最 max 值 即为结果。
+
+1.动态规划
+
+分别从左上角 到 右下角
+
+右下角 到 左上角 两次遍历。
+
+~~~c++
+//初始化：
+//grid[i][j] == 0: dp[i][j] = 1000; (题目中最大距离为200，大于200即可)
+//grid[i][j] == 1: dp[i][j] = 0; (陆地到陆地的距离为0)
+
+//两遍动态规划：
+for(int i=0; i<rows; i++){
+    for(int j=0; j<cols; j++){
+        if(j >= 1)dp[i][j] = min(dp[i][j], dp[i][j-1] + 1);
+        if(i >= 1)dp[i][j] = min(dp[i][j], dp[i-1][j] + 1);
+    }
+}
+for(int i=rows-1; i>=0; i--){
+    for(int j=cols-1; j>=0; j--){
+        if(j < cols-1)dp[i][j] = min(dp[i][j], dp[i][j+1] + 1);
+        if(i < rows-1)dp[i][j] = min(dp[i][j], dp[i+1][j] + 1);
+    }
+}
+~~~
+
+~~~c++
+int maxDistance(vector<vector<int>>& grid) {
+    int rows = grid.size();
+    if(rows == 0)return -1;
+    int cols = grid[0].size();
+    vector<vector<int>> dp(rows, vector<int>(cols, 1000));
+    for(int i=0; i<rows; i++){
+        for(int j=0; j<cols; j++){
+            if(grid[i][j] == 1)dp[i][j] = 0;
+        }
+    }
+    for(int i=0; i<rows; i++){
+        for(int j=0; j<cols; j++){
+            if(j >= 1)dp[i][j] = min(dp[i][j], dp[i][j-1] + 1);
+            if(i >= 1)dp[i][j] = min(dp[i][j], dp[i-1][j] + 1);
+        }
+    }
+    for(int i=rows-1; i>=0; i--){
+        for(int j=cols-1; j>=0; j--){
+            if(j < cols-1)dp[i][j] = min(dp[i][j], dp[i][j+1] + 1);
+            if(i < rows-1)dp[i][j] = min(dp[i][j], dp[i+1][j] + 1);
+        }
+    }
+    int maxRes = -1;
+    for(int i=0; i<rows; i++){
+        for(int j=0; j<cols; j++){
+            if(grid[i][j] == 0){
+                maxRes = max(maxRes, dp[i][j]);
+            }
+        }
+    }
+    if(maxRes == 1000)return -1;
+    return maxRes;
+}
+~~~
+
+**多源BFS：**
+
+添加一个虚拟源头，指向所有的陆地
+
+先将所有的陆地 入队列，再将其distance值 改为0
+
+~~~
+if distance[x][y] > distance[row][col] + 1
+这时需要更新 distance[x][y]的值
+因为distance[x][y]值变小，则需要将其入队列，继续更新附近的distance
+~~~
+
+~~~c++
+const int INF = 1e6;
+int maxDistance(vector<vector<int>>& grid) {
+    int rows = grid.size();
+    if(rows == 0)return -1;
+    int cols = grid[0].size();
+    int dx[] = {1,-1,0,0};
+    int dy[] = {0,0,1,-1};
+    int maxRes = -1;
+    deque<pair<int, int>> dequeOfGrid;
+    vector<vector<int>> distance(rows, vector<int>(cols, INF));
+    for(int i=0; i<rows; i++){
+        for(int j=0; j<cols; j++){
+            if(grid[i][j] == 1){
+                distance[i][j] = 0;
+                dequeOfGrid.push_back({i, j});
+            }
+        }
+    }
+    while(!dequeOfGrid.empty()){
+        auto position = dequeOfGrid.front();
+        dequeOfGrid.pop_front();
+        int row = position.first;
+        int col = position.second;
+        for(int i=0; i<4; i++){
+            int x = row + dx[i];
+            int y = col + dy[i];
+            if(x<0 || x>=rows || y<0 || y>=cols)continue;
+            if(distance[x][y] > distance[row][col] + 1){
+                distance[x][y] = distance[row][col] + 1;
+                dequeOfGrid.push_back({x, y});
+                maxRes = max(maxRes, distance[x][y]);
+            }   
+        }
+    }
+    return maxRes;
+}
+~~~
+
+
+
+### 289.生命游戏
+
+给定一个包含 m × n 个格子的面板，每一个格子都可以看成是一个细胞。每个细胞都具有一个初始状态：1 即为活细胞（live），或 0 即为死细胞（dead）。每个细胞与其八个相邻位置（水平，垂直，对角线）的细胞都遵循以下四条生存定律：
+
+1.如果活细胞周围八个位置的活细胞数少于两个，则该位置活细胞死亡；
+2.如果活细胞周围八个位置有两个或三个活细胞，则该位置活细胞仍然存活；
+3.如果活细胞周围八个位置有超过三个活细胞，则该位置活细胞死亡；
+4.如果死细胞周围正好有三个活细胞，则该位置死细胞复活；
+
+请注意，面板上所有格子需要同时被更新：你不能先更新某些格子，然后使用它们的更新后的值再更新其他格子。
+
+**解：**
+
+-1：活->死
+
+2：死->活
+
+是否变化只与 活细胞数量有关，则每次只需要记录一圈8个邻居的活细胞数
+
+最后遍历一遍数组 恢复 -1->0, 2->1
+
+~~~c++
+class Solution {
+public:
+    void gameOfLife(vector<vector<int>>& board) {
+        rows = board.size();
+        if(rows == 0)return;
+        cols = board[0].size();
+        for(int i=0; i<rows; i++){
+            for(int j=0; j<cols; j++){
+                changeStatus(board, i, j);
+            }
+        }
+        for(int i=0; i<rows; i++){
+            for(int j=0; j<cols; j++){
+                if(board[i][j] == -1)board[i][j] = 0;
+                else if(board[i][j] == 2)board[i][j] = 1;
+            }
+        }
+    }
+    void changeStatus(vector<vector<int>>& board, int row, int col){
+        int live = 0;
+        for(int i=0; i<8; i++){
+            int x = row + dx[i];
+            int y = col + dy[i];
+            if(x<0 || x>=rows || y<0 || y>=cols)continue;
+            if(board[x][y] == 1 || board[x][y] == -1)live++;
+        }
+        if(board[row][col] == 1 && (live < 2 || live > 3))board[row][col] = -1;
+        else if(board[row][col] == 0 && live == 3)board[row][col] = 2;
+    }
+private:
+    vector<int> dx = {1,-1,0,0,1,1,-1,-1};
+    vector<int> dy = {0,0,1,-1,1,-1,1,-1};
+    int rows = 0;
+    int cols = 0;
+};
+~~~
+
+
+
+### 491.递增子序列
+
+给定一个整型数组, 你的任务是找到所有该数组的递增子序列，递增子序列的长度至少是2。
+
+~~~
+输入: [4, 6, 7, 7]
+输出: [[4, 6], [4, 7], [4, 6, 7], [4, 6, 7, 7], [6, 7], [6, 7, 7], [7,7], [4,7,7]]
+~~~
+
+**解：**
+
+深度优先遍历(DFS)
+
+用unordered_set 去除重复，保证某一位置 只能选择一个值为x的数字
+
+~~~c++
+class Solution {
+public:
+    vector<vector<int>> findSubsequences(vector<int>& nums) {
+        if(nums.empty())return {};
+        unordered_set<int> repeated;
+        for(int i=0; i<nums.size()-1; i++){
+            if(repeated.count(nums[i]) == 1)continue;
+            repeated.insert(nums[i]);
+            path.push_back(nums[i]);
+            dfs(nums, i+1);
+            path.pop_back();
+        }
+        return res;
+    }
+    void dfs(vector<int>& nums, int start){
+        unordered_set<int> repeated;
+        for(int i=start; i<nums.size(); i++){
+            if(repeated.count(nums[i]) == 1)continue;
+            if(nums[i] >= path.back()){
+                path.push_back(nums[i]);
+                repeated.insert(nums[i]);
+                res.push_back(path);
+                dfs(nums, i+1);
+                path.pop_back();
+            }
+        }
+    }
+private:
+    vector<vector<int>> res;
+    vector<int> path;
+};
+~~~
+
+
+
+### 678.有效的括号字符串
+
+给定一个只包含三种字符的字符串：（ ，） 和 *，写一个函数来检验这个字符串是否为有效字符串。有效字符串具有如下规则：
+
+左右括号需要相互匹配
+
+*可以当作 左括号 || 右括号 || 空
+
+空也为true
+
+~~~
+输入: "(*)"
+输出: True
+
+输入: "(*))"
+输出: True
+~~~
+
+**解：**
+
+贪心算法
+
+记录 最大可能的 '(' 数量 maxBracket
+
+​		最小可能的 '(' 数量 minBracket
+
+~~~
+s[i] == '(' 则 都+1
+s[i] == ')' 则 都-1 
+s[i] == '*' 则 max+1, min-1
+最终 min == 0 则为true
+~~~
+
+~~~c++
+bool checkValidString(string s) {
+    int maxBracket = 0;
+    int minBracket = 0;
+    for(int i=0; i<s.length(); i++){
+        if(s[i] == '('){
+            maxBracket++;
+            minBracket++;
+        }else if(s[i] == ')'){
+            if(maxBracket <= 0)return false;
+            maxBracket--;
+            if(minBracket > 0)minBracket--;
+        }else {
+            maxBracket++;
+            if(minBracket > 0)minBracket--;
+        }
+    }
+    return minBracket==0;
+}
+~~~
+
+
+
+### 1111.有效括号的嵌套深度
+
+给你一个「有效括号字符串」 seq，请你将其分成两个不相交的有效括号字符串，A 和 B，并使这两个字符串的深度最小。
+
+**解：**
+
+~~~
+左括号 则 深度+1 输出深度
+右括号 则 输出深度 深度-1
+将奇数深度 和 偶数深度 分为 0 和 1
+~~~
+
+~~~c++
+vector<int> maxDepthAfterSplit(string seq) {
+    vector<int> res;
+    if(seq.empty())return res;
+    int depth = 0;
+    for(int i=0; i<seq.length(); i++){
+        if(seq[i] == '('){
+            depth++;
+            res.push_back(depth);
+        }else {
+            res.push_back(depth);
+            depth--;
+        }
+    }
+    for(int i=0; i<res.size(); i++){
+        res[i] = res[i] % 2;
+    }
+    return res;
+}
+~~~
+
+
+
+### 01-07.原地旋转矩阵
+
+给你一幅由 N × N 矩阵表示的图像，请你设计一种算法，将图像旋转 90 度。
+
+不使用额外内存空间
+
+**解：**
+
+模拟旋转
+
+~~~
+N*N矩阵
+int rows = N-1;
+int cols = N-1;
+以下为4个对应的旋转坐标，只需将4个循环变换即可
+      (i, j)   
+  		      (j, cols-i)
+(rows-j, i)  		 
+       (rows-i, cols-j) 
+~~~
+
+~~~c++
+void rotate(vector<vector<int>>& matrix) {
+    if(matrix.empty())return;
+    int rows = matrix.size()-1;
+    int cols = matrix[0].size()-1;
+    int row = 0;
+    while(2*row < rows+1){
+        for(int col=row; col<rows-row; col++){
+            rotateCore(matrix, row, col, rows, cols);
+        }
+        row++;
+    }
+}
+void rotateCore(vector<vector<int>>& matrix, int i, int j, int rows, int cols){
+    int prev = matrix[rows-j][i];
+    matrix[rows-j][i] = matrix[rows-i][cols-j];
+    matrix[rows-i][cols-j] = matrix[j][cols-i];
+    matrix[j][cols-i] = matrix[i][j];
+    matrix[i][j] = prev;
+}
+~~~
+
+方法2：
+
+先按照 竖直中心对称，再按照左对角线对称
+
+~~~
+1 2 3    3 2 1    7 4 1
+4 5 6 -> 6 5 4 -> 8 5 2
+7 8 9    9 8 7    9 6 3
+先按竖直中心:
+    |
+    |
+    |
+再按左对角线:
+     /
+   /
+ /
+~~~
+
+~~~c++
+void rotate(vector<vector<int>>& matrix) {
+    int n = matrix.size();
+    for (int i = 0; i < n; i++)
+    {
+        for (int j = 0; j < n/2; j++)
+        {
+            swap(matrix[i][j], matrix[i][n - j - 1]);
+        }
+    }
+
+    for (int i = 0; i < n; i++)
+    {
+        for (int j = 0; j < n-i-1; j++)
+        {
+            swap(matrix[i][j], matrix[n - j - 1][n - i - 1]);
+        }
+    }
+
+}
+~~~
+
+
+
+### 120.三角形最小路径和
+
+给定一个三角形，找出自顶向下的最小路径和。每一步只能移动到下一行中相邻的结点上。
+
+~~~
+[
+     [2],
+    [3,4],
+   [6,5,7],
+  [4,1,8,3]
+]
+自顶向下的最小路径和为 11（即，2 + 3 + 5 + 1 = 11）
+~~~
+
+**解：**
+
+**自下向上** 的 动态规划
+
+~~~
+先将最后一排 复制创建为 vector<int> dp(triangle.back().begin(), triangle.back().end());
+从倒数第二排 逐行更新到 第0排
+每一个数字，取决于 正下方的数dp[j]和右下方的数dp[j+1]中的最小值
+dp[j] = min(dp[j], dp[j+1]) + triangle[i][j];
+~~~
+
+~~~c++
+int minimumTotal(vector<vector<int>>& triangle) {
+    int rows = triangle.size();
+    if(triangle.empty())return 0;
+    vector<int> dp(triangle.back().begin(), triangle.back().end());
+    for(int i=rows-2; i>=0; i--){
+        for(int j=0; j<=i; j++){
+            dp[j] = min(dp[j], dp[j+1]) + triangle[i][j];
+        }
+    }
+    return dp[0];
+}
+~~~
+
+
+
+### 139.单词拆分
+
+给定一个非空字符串 s 和一个包含非空单词列表的字典 wordDict，判定 s 是否可以被空格拆分为一个或多个在字典中出现的单词。
+
+拆分时可以重复使用字典中的单词。
+
+你可以假设字典中没有重复的单词。
+
+~~~
+输入: s = "leetcode", wordDict = ["leet", "code"]
+输出: true
+输入: s = "applepenapple", wordDict = ["apple", "pen"]
+输出: true
+~~~
+
+**解：**统一把字典中的单词加入 hashset 中
+
+1.**递归** 深度优先遍历
+
+设置start索引
+
+当[start, end) 构成一个字典中单词时，递归判断从end开始[end, length)是否能构成单词
+
+trick:  使用unordered_map<int, bool>
+
+通过记录 start 开始是否能够构成单词组，减少判断次数
+
+从后往前，逐步更新 start 位 true or false
+
+~~~c++
+class Solution {
+public:
+    bool wordBreak(string s, vector<string>& wordDict) {
+        maxLen = 0;
+        for(auto word : wordDict){
+            maxLen = max(maxLen, (int)word.length());
+            setOfWords.insert(word);
+        }
+        return wordBreakCore(s, 0);
+    }
+    bool wordBreakCore(string& s, int start){
+        if(start >= s.length())return true;
+        if(beginOfIndex.count(start))return beginOfIndex[start];
+
+        for(int end = start+1; end<=start+maxLen && end<=s.length(); end++){
+            if(setOfWords.count(s.substr(start, end-start))){
+                if(wordBreakCore(s, end))return beginOfIndex[start] = true;
+            }
+        }
+        return beginOfIndex[start] = false;
+    }
+private:
+    unordered_set<string> setOfWords;
+    unordered_map<int, bool> beginOfIndex;
+    int maxLen;
+};
+~~~
+
+
+
+2.**广度优先遍历**
+
+以开始索引start 为 遍历的 标准，deque<int>
+
+设置maxLen 防止 [start, end) 过长冗余操作
+
+设置visited，将访问过的start位，设为true，不再重复遍历
+
+当[start, end) 属于词典，则将end 作为新的 索引 **入队列**
+
+当end == s.length()时，返回true
+
+~~~c++
+bool wordBreak(string s, vector<string>& wordDict) {
+    int maxLen = 0;
+    vector<bool> visited(s.length(), false);
+    unordered_set<string> setOfWords;
+    deque<int> startOfWords;
+    startOfWords.push_back(0);
+    for(auto word : wordDict){
+        maxLen = max(maxLen, (int)word.length());
+        setOfWords.insert(word);
+    }
+    while(!startOfWords.empty()){
+        int start = startOfWords.front();
+        startOfWords.pop_front();
+        if(visited[start])continue;
+        for(int end=start+1; end<=start+maxLen && end<=s.length(); end++){
+            if(setOfWords.count(s.substr(start, end-start))){
+                if(end == s.length())return true;
+                startOfWords.push_back(end);
+            }
+        }
+        visited[start] = true;
+    }
+    return false;
+}
+~~~
+
+
+
+3.**动态规划**
+
+dp[i]表示 从1开始到s.length()，表示以第i个字符结尾的字符串是否能够划分为单词
+
+因此结果 输出  dp[s.length()]
+
+~~~
+初始化dp[0] = true; 其他为false
+dp[i] 可分为 dp[j] && s.substr(j, i-j)
+因为j 实际上 是下标中的j-1
+~~~
+
+~~~c++
+bool wordBreak(string s, vector<string>& wordDict) {
+    vector<bool> dp(s.length()+1, false);
+    dp[0] = true;
+    unordered_set<string> setOfWords;
+    for(auto word : wordDict){
+        setOfWords.insert(word);
+    }
+    for(int i=1; i<=s.length(); i++){
+        for(int j=0; j<i; j++){
+            dp[i] = dp[j] && setOfWords.count(s.substr(j, i-j));
+            if(dp[i])break;
+        }
+    }
+    return dp[s.length()];
+}
+~~~
+
+
+
+### 22.括号生成
+
+数字 n 代表生成括号的对数，请你设计一个函数，用于能够生成所有可能的并且 有效的 括号组合。
+
+~~~
+输入：n = 3
+输出：[
+       "((()))",
+       "(()())",
+       "(())()",
+       "()(())",
+       "()()()"
+     ]
+~~~
+
+**解：**
+
+回溯法
+
+初始化 left = n, right = n。表示还能够放置的 左括号 和 右括号 数量
+
+每轮遍历：都可以放 左 或者 右
+
+当 left > 0 则可以放入 '(' ，然后深度优先遍历
+
+当 left < right 则左括号放置的多，因此可以放 ')' 
+
+~~~c++
+vector<string> generateParenthesis(int n) {
+    if(n<0)return {};
+    string temp;
+    vector<string> res;
+    backtrack(res,temp,n,n);
+    return res;
+}
+void backtrack(vector<string> &res,string &temp, int left, int right){
+    if(right == 0){
+        res.push_back(temp);
+        return;
+    }
+    if(left > 0){
+        temp.push_back('(');
+        backtrack(res,temp,left-1,right);
+        temp.pop_back();
+    }
+    if(left < right){
+        temp.push_back(')');
+        backtrack(res,temp,left,right-1);
+        temp.pop_back();
+    }
+}
+~~~
+
+
+
+### 1292.元素和小于等于阈值的正方形的最大边长
+
+给你一个大小为 m x n 的矩阵 mat 和一个整数阈值 threshold。
+
+请你返回元素总和小于或等于阈值的正方形区域的最大边长；如果没有这样的正方形区域，则返回 0 。
+
+**解：**
+
+二维前缀和
+
+~~~
+定义(1,1)为最左上角的点，方便初始化p矩阵
+p[i][j]表示 左上角(1,1)与 右下角(i,j) 组合成的正方形的 所有元素的和
+p[i][j] = p[i-1][j] + p[i][j-1] - p[i-1][j-1] + mat[i-1][j-1];
+//因为i,j从1开始 因此是mat[i-1][j-1]
+
+任意 左上角(x1,x2) 右下角(x2,y2)
+sum = p[x2][y2] - p[x1-1][y2] - p[x2][y1-1] + p[x1-1][y1-1];
+~~~
+
+**1.枚举加优化：**
+
+~~~
+res = 0;
+设置maxSide = 1, 不断更新maxSide为最大边长，循环 i<=rows-maxSide; j<=cols-maxSide;
+1.每次k值 设置为res+1 开始 循环到不溢出的边长min(rows-i, cols-j) 循环计算sum值 更新res和maxSide
+2.当sum值 >= threshold时，不再继续循环该起点，进入下一个起点
+~~~
+
+~~~c++
+int maxSideLength(vector<vector<int>>& mat, int threshold) {
+    int rows = mat.size();
+    if(rows == 0)return 0;
+    int cols = mat[0].size();
+    int res = 0;
+    vector<vector<int>> p(rows+1, vector<int>(cols+1, 0));
+    for(int i=1; i<=rows; i++){
+        for(int j=1; j<=cols; j++){
+            p[i][j] = p[i-1][j] + p[i][j-1] - p[i-1][j-1] + mat[i-1][j-1];
+        }
+    }
+    int maxSide = 1;
+    for(int i=0; i<=rows-maxSide; i++){
+        for(int j=0; j<=cols-maxSide; j++){
+            if(mat[i][j] < threshold){
+                int side = min(rows-i, cols-j);
+                for(int k=res+1; k<=side; k++){
+                    int x2 = i+k;
+                    int y2 = j+k;
+                    int sum = p[x2][y2] - p[i][y2] - p[x2][j] + p[i][j];
+                    if(sum <= threshold){
+                        res = k;
+                        maxSide = res;
+                    }
+                    if(sum >= threshold)break;
+                }
+            }else if(res<1 && mat[i][j] == threshold)res=1;
+        }
+    }
+    return res;
+}
+~~~
+
+**2.二分查找：**
+
+~~~
+int left = 0;
+int right = min(rows, cols);
+int mid = left + (right - left)/2;
+以二分查找的方式，查找mid为边长的 正方形 是否存在 sum <= threshold
+存在则 left = mid+1;
+不存在则 right = mid-1;
+~~~
+
+~~~c++
+int maxSideLength(vector<vector<int>>& mat, int threshold) {
+    int rows = mat.size();
+    if(rows == 0)return 0;
+    int cols = mat[0].size();
+    int res = 0;
+    vector<vector<int>> p(rows+1, vector<int>(cols+1, 0));
+    for(int i=1; i<=rows; i++){
+        for(int j=1; j<=cols; j++){
+            p[i][j] = p[i-1][j] + p[i][j-1] - p[i-1][j-1] + mat[i-1][j-1];
+        }
+    }
+    int left = 1;
+    int right = min(rows, cols);
+    while(left <= right){
+        bool check = false;
+        int mid = left + (right - left)/2;
+        for(int i=0; i<=rows-mid; i++){
+            for(int j=0; j<=cols-mid; j++){
+                int x2 = i+mid;
+                int y2 = j+mid;
+                int sum = p[x2][y2] - p[i][y2] - p[x2][j] + p[i][j];
+                if(sum <= threshold){
+                    res = mid;
+                    left = mid+1;
+                    check = true;
+                    break;
+                }
+            }
+            if(check)break;
+        }
+        if(check)left = mid + 1;
+        else right = mid - 1;
+    }  
+    return res;
+}
+~~~
+
+
+
+### 887.鸡蛋掉落
+
+你将获得 K 个鸡蛋，并可以使用一栋从 1 到 N  共有 N 层楼的建筑。
+
+每个蛋的功能都是一样的，如果一个蛋碎了，你就不能再把它掉下去。
+
+你知道存在楼层 F ，满足 0 <= F <= N 任何从高于 F 的楼层落下的鸡蛋都会碎，从 F 楼层或比它低的楼层落下的鸡蛋都不会破。
+
+每次移动，你可以取一个鸡蛋（如果你有完整的鸡蛋）并把它从任一楼层 X 扔下（满足 1 <= X <= N）。
+
+你的目标是确切地知道 F 的值是多少。
+
+无论 F 的初始值如何，你确定 F 的值的最小移动次数是多少？
+
+**解：**
+
+动态规划 + 二分查找
+
+~~~
+dp(K, N) = 1 + min (max(dp(K-1,X-1), dp(K,N-X)))     1 <= X <= N
+					         T1          T2
+ 1       1  T1 单调递增 关于X
+   1   1
+     1 
+   1   1
+ 1       1  T2 单调递减 关于X
+ 二分查找出 left 和 right
+ 使得left 和 right 之间只有一个值 mid
+ 且 X == left 时,  T2 > T1
+   X == right 时, T1 > T2
+~~~
+
+~~~c++
+unordered_map<int, int> mapOfAns;
+int superEggDrop(int K, int N) {
+    return dp(K, N);
+}
+int dp(int K, int N){
+    int ans = 0;
+    if(mapOfAns.count(N*100+K) == 0){
+        if(N == 0)ans = 0;
+        else if(K == 1)ans = N;
+        else {
+            int left = 1;
+            int right = N;
+            while(left+1 < right){
+                int mid = left + (right - left)/2;
+                int t1 = dp(K-1, mid-1);
+                int t2 = dp(K, N-mid);
+                if(t1 > t2)right = mid;
+                else if(t1 < t2)left = mid;
+                else {
+                    left = right = mid;
+                }
+            }
+            ans = 1 + min(dp(K, N-left), dp(K-1,right-1));
+        }
+        mapOfAns[N*100 + K] = ans; 
+    }
+    return mapOfAns[N*100 + K];
+}
+~~~
+
+
+
+### 93.复原IP地址
+
+给定一个只包含数字的字符串，复原它并返回所有可能的 IP 地址格式
+
+~~~
+输入: "25525511135"
+输出: ["255.255.11.135", "255.255.111.35"]
+~~~
+
+**解：**
+
+IP地址要求 总共4段 每段<256 且中间用 '.' 连接
+
+DFS 思路
+
+分为 n>1 和 n==1两种
+
+n==1 时，直接将后续所有字符 算做最后一段
+
+n>1 时，选取 i (1-3)个字符算做本段，再将 s.substr(i) 作为输入递归
+
+如果 0 开头 则只允许 0本身 不允许 01的出现
+
+~~~c++
+class Solution {
+public:
+    vector<string> restoreIpAddresses(string s) {
+        backtrack(s, 4);
+        return res;
+    }
+    void backtrack(string s, int n){
+        if(n > 1){
+            int sum = 0;
+            if(s[0] == '0'){
+                path += "0.";
+                backtrack(s.substr(1), n-1);
+                path.pop_back();
+                path.pop_back();
+                return;
+            }
+            for(int i=0; i<s.length() && i<3; i++){
+                sum = sum*10 + (s[i] - '0');
+                if(sum < 256){
+                    path += s.substr(0, i+1) + '.';
+                    backtrack(s.substr(i+1), n-1);
+                    int num = i+2;
+                    while(num){
+                        path.pop_back();
+                        num--;
+                    }
+                }
+            }
+        }else if(n == 1){
+            if(s.length() > 3 || s.length()==0)return;
+            if(s[0] == '0' && s.length()>1)return;
+            int sum = 0;
+            for(int i=0; i<s.length(); i++){
+                sum = sum*10 + (s[i] - '0');
+            }
+            if(sum < 256){
+                string temp = path + s;
+                res.push_back(temp);
+            }
+        }
+    }
+
+private:
+    vector<string> res;
+    string path;
+};
+~~~
+
+
+
+### 355.设计推特
+
+设计一个简化版的推特(Twitter)，可以让用户实现发送推文，关注/取消关注其他用户，能够看见关注人（包括自己）的最近十条推文。你的设计需要支持以下的几个功能：
+
+1.postTweet(userId, tweetId): 创建一条新的推文
+2.getNewsFeed(userId): 检索最近的十条推文。每个推文都必须是由此用户关注的人或者是用户自己发出的。推文必须按照时间顺序由最近的开始排序。
+3.follow(followerId, followeeId): 关注一个用户
+4.unfollow(followerId, followeeId): 取消关注一个用户
+
+**解：**
+
+使用list存放所有的tweet，能做到时间排序
+
+每个用户，用hashmap，记录 关注的人 和 自己发的推特的迭代器
+
+当需要输出 10个 推特时，
+
+采取归并排序的思路，
+
+将自己和 所有 关注的人 的 迭代器 进行比较，每次更新前10个值
+
+~~~c++
+class Twitter {
+    struct Node{
+        unordered_set<int> followee;
+        list<list<int>::iterator> tweetIt;
+    };
+    list<int> tweet;
+    unordered_map<int, Node> user;
+    int resMax;
+public:
+    Twitter() {
+        resMax = 10;
+    }
+    
+    void postTweet(int userId, int tweetId) {
+        tweet.push_front(tweetId);
+        user[userId].tweetIt.push_front(tweet.begin());
+    }
+    
+    vector<int> getNewsFeed(int userId) {
+        vector<int> res;
+        vector<list<int>::iterator> copy;
+        int num = 0;
+        for(auto it = user[userId].tweetIt.begin(); num<resMax && it != user[userId].tweetIt.end(); it++){
+            copy.push_back(*it);
+            num++;
+        }
+        for(auto follow : user[userId].followee){
+            if(follow == userId)continue;
+            num = 0;
+            vector<list<int>::iterator> ans;
+            int index = 0;
+            auto it = user[follow].tweetIt.begin();
+            while(num < 10 && it!=user[follow].tweetIt.end() && index < copy.size()){
+                if(distance(tweet.begin(), *it) < distance(tweet.begin(), copy[index])){
+                    ans.push_back(*it);
+                    it++;
+                }else {
+                    ans.push_back(copy[index]);
+                    index++;
+                }
+                num++;
+            }
+            if(num < 10){
+                while(it != user[follow].tweetIt.end() && ans.size()<resMax){
+                    ans.push_back(*it);
+                    it++;
+                }
+                for(int i=index; i<copy.size(); i++){
+                    ans.push_back(copy[i]);
+                }
+            }
+            copy.clear();
+            for(int i=0; i<ans.size(); i++){
+                copy.push_back(ans[i]);
+            }
+        }
+        for(int i=0; i<copy.size(); i++){
+            res.push_back(*(copy[i]));
+        }
+        return res;
+    }
+    
+    void follow(int followerId, int followeeId) {
+        user[followerId].followee.insert(followeeId);
+    }
+    
+    void unfollow(int followerId, int followeeId) {
+        user[followerId].followee.erase(followeeId);
+    }
+};
+~~~
+
+
+
+### 445.两数相加II
+
+给你两个 非空 链表来代表两个非负整数。数字最高位位于链表开始位置。它们的每个节点只存储一位数字。将这两数相加会返回一个新的链表。
+
+你可以假设除了数字 0 之外，这两个数字都不会以零开头。
+
+输入链表不能修改
+
+~~~
+输入：(7 -> 2 -> 4 -> 3) + (5 -> 6 -> 4)
+输出：7 -> 8 -> 0 -> 7
+ 7243
++ 564
+=7807
+~~~
+
+**解：**
+
+使用两个栈 记录两输入链表的各位数字
+
+~~~c++
+ListNode* addTwoNumbers(ListNode* l1, ListNode* l2) {
+    stack<int> stack1;
+    stack<int> stack2;
+    while(l1){
+        stack1.push(l1->val);
+        l1 = l1->next;
+    }
+    while(l2){
+        stack2.push(l2->val);
+        l2 = l2->next;
+    }
+    ListNode* node = nullptr;
+    int carry = 0;
+    while(!stack1.empty() || !stack2.empty() || carry!=0){
+        int num1 = stack1.empty() ? 0 : stack1.top();
+        int num2 = stack2.empty() ? 0 : stack2.top();
+        if(!stack1.empty())stack1.pop();
+        if(!stack2.empty())stack2.pop();
+        int sum = num1 + num2 + carry;
+        int cur = sum%10;
+        carry = sum/10;
+        ListNode* newNode = new ListNode(cur);
+        newNode->next = node;
+        node = newNode;
+    }
+    return node;
+}
+~~~
+
+使用hash_map存储前一Node 方便计算进位
+
+~~~c++
+class Solution {
+public:
+    ListNode* addTwoNumbers(ListNode* l1, ListNode* l2) {
+        if(!l1 || !l2)return nullptr;
+        int len1 = getLength(l1);
+        int len2 = getLength(l2);
+        if(len1 >= len2)return add(l1, l2, len1-len2);
+        else return add(l2, l1, len2-len1);
+    }
+    ListNode* add(ListNode* l1, ListNode* l2, int diff){
+        ListNode* root = new ListNode(1);
+        ListNode* pHead = root;
+        ListNode* prev = root;
+        while(diff){
+            pHead->next = new ListNode(l1->val);
+            pHead = pHead->next;
+            prevNode.insert({pHead, prev});
+            prev = pHead;
+            l1 = l1->next;
+            diff--;
+        }
+        int sig = 0;
+        int carry = 0;
+        while(l1){
+            int sum = l1->val + l2->val;
+            int num = sum%10;
+            carry = sum/10;
+            if(carry == 1){
+                ListNode* copy = pHead;
+                while(copy->val+carry >= 10){
+                    copy->val = 0;
+                    copy = prevNode[copy];
+                }
+                if(copy == root)sig = 1;
+                else copy->val++;              
+            }
+            pHead->next = new ListNode(num);
+            pHead = pHead->next;
+            prevNode.insert({pHead, prev});
+            prev = pHead;
+            l1 = l1->next;
+            l2 = l2->next;
+        }
+        if(sig)return root;
+        else return root->next;
+    }
+    int getLength(ListNode* root){
+        int res = 0;
+        while(root){
+            res++;
+            root = root->next;
+        }
+        return res;
+    }
+private:
+    unordered_map<ListNode*, ListNode*> prevNode;
+};
+~~~
+
+
+
+### 1283.使结果不超过阈值的最小除数
+
+给你一个整数数组 nums 和一个正整数 threshold  ，你需要选择一个正整数作为除数，然后将数组里每个数都除以它，并对除法结果求和。
+
+请你找出能够使上述结果小于等于阈值 threshold 的除数中 最小 的那个。
+
+每个数除以除数后都向上取整，比方说 7/3 = 3 ， 10/2 = 5 。
+
+~~~
+输入：nums = [1,2,5,9], threshold = 6
+输出：5
+解释：如果除数为 1 ，我们可以得到和为 17 （1+2+5+9）。
+如果除数为 4 ，我们可以得到和为 7 (1+1+2+3) 。如果除数为 5 ，和为 5 (1+1+1+2)。
+
+输入：nums = [19], threshold = 5
+输出：4
+~~~
+
+**解：**
+
+二分查找
+
+start = 1
+
+end = 数组中最大的数
+
+判定条件是 start < end，并不需要等于
+
+当sum <= threshold 时 end = mid
+
+sum > threshold 时 start = mid + 1
+
+返回 end
+
+~~~c++
+//向上取整：
+ans = (num-1)/divide + 1;
+ans = ceil((double)num/divide);
+~~~
+
+~~~c++
+int smallestDivisor(vector<int>& nums, int threshold) {
+    //if(nums.empty())return 0;
+    int sum = 0;
+    int end = nums[0];
+    int start = 1;
+    for(int i=0; i<nums.size(); i++){
+        if(nums[i] > end)end = nums[i];
+    }
+    while(start < end){
+        int mid = start + (end - start)/2;
+        sum = 0;
+        for(int i=0; i<nums.size(); i++){
+            sum += ceil((double)nums[i]/mid);
+        }
+        if(sum > threshold)start = mid+1;
+        if(sum <= threshold)end = mid;
+    }
+    return end;
+}
+~~~
+
+
+
+### 23.合并K个排序链表
+
+合并 k 个排序链表，返回合并后的排序链表。请分析和描述算法的复杂度。
+
+~~~
+输入:
+[
+  1->4->5,
+  1->3->4,
+  2->6
+]
+输出: 1->1->2->3->4->4->5->6
+~~~
+
+**解：**
+
+采用归并排序的思路
+
+将存储链表头的vector 分为 [start, mid] [mid+1, end]
+
+~~~c++
+ListNode* mergeKLists(vector<ListNode*>& lists) {
+    if(lists.empty())return nullptr;
+    return merge(lists, 0, lists.size()-1);
+}
+ListNode* merge(vector<ListNode*>& lists, int start, int end){
+    if(start == end)return lists[start];
+    if(start > end)return nullptr;
+    int mid = start + (end-start)/2;
+    ListNode* left = merge(lists, start, mid);
+    ListNode* right = merge(lists, mid+1, end);
+    return mergeTwoLists(left, right);
+}
+//merge two lists
+ListNode* mergeTwoLists(ListNode* left, ListNode* right){
+    ListNode* res = new ListNode(0);
+    ListNode* pHead = res;
+    while(left && right){
+        if(left->val < right->val){
+            res->next = new ListNode(left->val);
+            left = left->next;
+        }else {
+            res->next = new ListNode(right->val);
+            right = right->next;
+        }
+        res = res->next;
+    }
+    res->next = left ? left : right;
+    return pHead->next;
+}
+~~~
+
+优先队列
+
+只将每个表头 加入优先队列(最小堆) 
+
+然后将 队列top 出队列，然后将top->next加入队列
+
+**注意: cmp的格式，注意: cmp的格式，注意: cmp的格式**
+
+~~~c++
+class Solution {
+public:
+    struct cmp{  
+       bool operator()(ListNode *a,ListNode *b){
+          return a->val > b->val;
+       }
+    };
+    ListNode* mergeKLists(vector<ListNode*>& lists) {
+        if(lists.empty())return nullptr;
+        priority_queue<ListNode*, vector<ListNode*>, cmp> queueOfListNodes;
+        for(auto list : lists){
+            if(list)queueOfListNodes.push(list);
+        }
+        ListNode* res = new ListNode(0);
+        ListNode* dummy = res;
+        while(!queueOfListNodes.empty()){
+            ListNode* temp = queueOfListNodes.top();
+            queueOfListNodes.pop();
+            dummy->next = new ListNode(temp->val);
+            if(temp->next)queueOfListNodes.push(temp->next);
+            dummy = dummy->next;
+        }
+        return res->next;
+    }
+};
+~~~
+
+
+    
